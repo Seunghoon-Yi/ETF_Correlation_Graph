@@ -233,12 +233,14 @@ st.markdown('## Correlation Chart Analysis')
 
 #-----------------------------------------------------
 from pyvis.network import Network
+import os
 
+if not os.path.exists('./html/2022-04-07.html'):
 
-for i in range(len(mw_net)):
-    nt = Network(height="500px", width="100%")
-    nt.from_nx(mw_net[i])
-    nt.show(f'./html/{dates_list[i]}.html')
+    for i in range(len(mw_net)):
+        nt = Network(height="500px", width="100%")
+        nt.from_nx(mw_net[i])
+        nt.show(f'./html/{dates_list[i]}.html')
 
 
 import streamlit.components.v1 as components
@@ -254,14 +256,19 @@ def weighted_jaccard(g1, graph_list):
     for g2 in graph_list:
         edges = set(g1.edges()).union(g2.edges())
         mins, maxs = 0, 0
+        V1, V2 = [],[]
         for edge in edges:
-            weight1 = g1.get_edge_data(*edge, {}).get('weight', 0)
-            weight2 = g2.get_edge_data(*edge, {}).get('weight', 0)
+            #weight1 = 
+            V1.append(g1.get_edge_data(*edge, {}).get('weight', 0))
+            #weight2 = 
+            V2.append(g2.get_edge_data(*edge, {}).get('weight', 0))
+            #print(weight1, weight2)
             
-            mins += min(weight1, weight2)
-            maxs += max(weight1, weight2)
-        sims.append(mins / (maxs+1.e-5))
+            #mins += min(weight1, weight2)
+            #maxs += max(weight1, weight2)
+        sims.append(np.dot(np.array(V1), np.array(V2)))
     return sims
+    
 
 top3_sim  = []                                              # 날짜당 비슷한 graph의 인덱스를 3개씩
 for single_graph in mw_net:
