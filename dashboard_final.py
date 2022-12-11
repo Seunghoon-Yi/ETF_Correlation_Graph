@@ -234,23 +234,61 @@ st.markdown('## Correlation Chart Analysis')
 #-----------------------------------------------------
 from pyvis.network import Network
 
-'''
+
 for i in range(len(mw_net)):
     nt = Network(height="500px", width="100%")
     nt.from_nx(mw_net[i])
     nt.show(f'./html/{dates_list[i]}.html')
-'''
+
 
 import streamlit.components.v1 as components
-st.markdown(f'## Find Similar Dates with Graph')
+st.markdown(f'## Search Similar Market Trend Histories with Graph')
 ## 승훈님 이 부분 해주세요!
+import numpy as np
+
+def weighted_jaccard(g1, graph_list):
+    # graph_list : graph of all windows
+    # g1 : a single graph to be compared
+    # g2 : a single graph to be conpared with g1
+    sims = []
+    for g2 in graph_list:
+        edges = set(g1.edges()).union(g2.edges())
+        mins, maxs = 0, 0
+        for edge in edges:
+            weight1 = g1.get_edge_data(*edge, {}).get('weight', 0)
+            weight2 = g2.get_edge_data(*edge, {}).get('weight', 0)
+            
+            mins += min(weight1, weight2)
+            maxs += max(weight1, weight2)
+        sims.append(mins / (maxs+1.e-5))
+    return sims
+
+top3_sim  = []                                              # 날짜당 비슷한 graph의 인덱스를 3개씩
+for single_graph in mw_net:
+    total_sim = weighted_jaccard(single_graph, mw_net)
+    top3_sim .append(np.argsort(total_sim)[::-1][1:4])
+
+top3_dates = {key_date : list(np.array(dates)[single_top3_sim]) for (key_date, single_top3_sim) in zip(dates, top3_sim)}
+
 
 tab1, tab2 = st.columns(2)
 with tab1:
-    st.markdown(f'### Pyvis Graph of {selected_date}') 
+    st.markdown(f'### Market correlation graph of {selected_date}') 
     HtmlFile = open(f"./html/{selected_date}.html", 'r', encoding='utf-8')
     source_code = HtmlFile.read()
-    components.html(source_code, height = 600,width=600)
+    components.html(source_code, height = 800,width=800)
 with tab2:
-    st.markdown(f'### Similar Graphs with {selected_date}')
+    st.markdown(f'### Similar markets with {selected_date}')
+    st.markdown(f'#### 1st candidate : {top3_dates[str(selected_date)][0]}')
+    HtmlFile = open(f"./html/{top3_dates[str(selected_date)][0]}.html", 'r', encoding='utf-8')
+    source_code = HtmlFile.read()
+    components.html(source_code, height = 360,width=360)
+    st.markdown(f'#### 2nd candidate : {top3_dates[str(selected_date)][1]}')
+    HtmlFile = open(f"./html/{top3_dates[str(selected_date)][1]}.html", 'r', encoding='utf-8')
+    source_code = HtmlFile.read()
+    components.html(source_code, height = 360,width=360)
+    st.markdown(f'#### 3rd candidate : {top3_dates[str(selected_date)][2]}')
+    HtmlFile = open(f"./html/{top3_dates[str(selected_date)][2]}.html", 'r', encoding='utf-8')
+    source_code = HtmlFile.read()
+    components.html(source_code, height = 360,width=360)
     st.markdown('show top three graphs')

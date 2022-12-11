@@ -368,6 +368,110 @@ fig = go.Figure(fig_dict)
 st.markdown('## Plotly Chart')
 st.plotly_chart(fig)
 
+# ========================================================================== #
+st.markdown('## Closest market trends in the selected range')
+import numpy as np
+
+def weighted_jaccard(g1, graph_list):
+    # graph_list : graph of all windows
+    # g1 : a single graph to be compared
+    # g2 : a single graph to be conpared with g1
+    sims = []
+    for g2 in graph_list:
+        edges = set(g1.edges()).union(g2.edges())
+        mins, maxs = 0, 0
+        for edge in edges:
+            weight1 = g1.get_edge_data(*edge, {}).get('weight', 0)
+            weight2 = g2.get_edge_data(*edge, {}).get('weight', 0)
+            
+            mins += min(weight1, weight2)
+            maxs += max(weight1, weight2)
+        sims.append(mins / maxs)
+    return sims
+
+top5_sim  = []                                              # 날짜당 비슷한 graph의 인덱스를 5개씩
+for single_graph in mw_net:
+    total_sim = weighted_jaccard(single_graph, mw_net)
+    top5_sim .append(np.argsort(total_sim)[::-1][1:6])
+
+top5_dates = {key_date : list(np.array(dates)[single_top5_sim]) for (key_date, single_top5_sim) in zip(dates, top5_sim)}
+#print(top5_sim)
+
+## [비슷한 mw 5개], [distance correlation들], [graph들]
+## 예를 들어, top5_mw_net['2010-10-07']은 graph 5개의 리스트를 반환. 
+# top5_moving_windows = [[sector_mw[i] for i in single_top5_sim] for single_top5_sim in top5_sim]
+# top5_mw_corr = [df_distance_correlation(single_top5_moving_windows) for single_top5_moving_windows in top5_moving_windows]
+# top5_mw_net = [build_corr_nx(single_top5_mw_corr) for single_top5_mw_corr in top5_mw_corr]
+
+import datetime as dt
+dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in dates]
+
+# Create the slidebar with range in REF
+#with st.sidebar:
+slidebar_value = st.select_slider(
+    label="Selected date : ",
+    options=dates_list
+)
+
+# Show the elements in TIME as text
+st.text(", ".join(i for i in top5_dates[slidebar_value.strftime('%Y-%m-%d')]))
+
+
+
+# for idx, date in enumerate(dates):
+#     frame = {"data": [], "name": str(date)}
+    
+#     edge_x, edge_y, weights = get_edge(idx)
+#     edge_dict = {
+#         "x": edge_x,
+#         "y": edge_y,
+#         "mode": "lines",
+#         "text": [],
+#         "line": {
+#             "color": "gray", "width":0.5
+#         },
+        
+#     }        
+#     frame["data"].append(edge_dict)
+    
+#     for etf in etfs :
+
+#         node_dict = {
+#             "x": [df_x[etf][idx]],
+#             "y": [df_y[etf][idx]],
+#             "mode": "markers",
+#             "text": [etf],
+#             "marker": {
+#                 "sizemode": "area",
+#                 "sizeref": 200000,
+#                 "size": [df_size[etf][idx]**8]
+#             },
+#             "name": etf
+#         }
+
+#         frame["data"].append(node_dict)
+
+#     fig_dict["frames"].append(frame)
+#     slider_step = {"args": [
+#         [date],
+#         {"frame": {"duration": 300, "redraw": False},
+#          "mode": "immediate",
+#          "transition": {"duration": 300}}
+#     ],
+#         "label": date,
+#         "method": "animate"}
+#     sliders_dict["steps"].append(slider_step)
+
+# fig_dict["layout"]["sliders"] = [sliders_dict]
+
+# fig = go.Figure(fig_dict)
+
+# st.markdown('## Plotly Chart')
+# st.plotly_chart(fig)
+
+
+# ========================================================================== #
+
 from pyvis.network import Network    
 
 nt = Network(height="750px", width="100%")
@@ -429,6 +533,8 @@ for select_etf, df in dfs.items():
 fig.update_xaxes(title_text = "Dates")
 fig.update_yaxes(title_text= "Rate of Return")
 st.plotly_chart(fig)
+
+
 
 
 
